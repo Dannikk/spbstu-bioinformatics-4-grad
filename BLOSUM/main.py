@@ -3,11 +3,16 @@ from itertools import combinations
 from math import log
 
 # depends on variant
-input_seq_1 = "GKVNVDEV"
-input_seq_2 = "GKVKVDEV"
-d = 2
+# input_seq_1 = "GKVNVDEV"
+# input_seq_2 = "GKVKVDEV"
+# d = 2
+import numpy as np
 
-PATH_FILE = "blosum_50.txt"  # if you have blosum-62 - dont change
+input_seq_1 = "WGKVGAHAGE"
+input_seq_2 = "WGKVNADN"
+d = 6
+
+PATH_FILE = "blosum_62.txt"  # if you have blosum-62 - dont change
 
 
 class BLOSUM:
@@ -27,8 +32,10 @@ class BLOSUM:
                 if not norm:
                     break
         if show:
-            for line in matrix:
-                print(line)
+            # for line in matrix:
+            #     print(line)
+            m = np.array(matrix)
+            print(m)
         return matrix
 
 
@@ -56,20 +63,25 @@ def run_blosum_and_answer():
                             blosum.matrix[blosum.words_to_int[i_elem]][blosum.words_to_int[j_elem]]
                 from_up = table[i_indx - 1][j_indx] - d
                 from_left = table[i_indx][j_indx - 1] - d
-                if from_diag >= from_up:
-                    if from_diag >= from_left:
-                        table[i_indx][j_indx] = from_diag
-                        sub_path.append("diag")
-                    else:
-                        table[i_indx][j_indx] = from_left
-                        sub_path.append("left")
-                else:
-                    if from_up >= from_left:
-                        table[i_indx][j_indx] = from_up
-                        sub_path.append("up")
-                    else:
-                        table[i_indx][j_indx] = from_left
-                        sub_path.append("left")
+
+                from_array = [(from_diag, 'diag'), (from_up, 'up'), (from_left, 'left')]
+                cur_max = max(from_array, key=lambda i: i[0])
+                table[i_indx][j_indx] = cur_max[0]
+                sub_path.append(cur_max[1])
+                # if from_diag >= from_up:
+                #     if from_diag >= from_left:
+                #         table[i_indx][j_indx] = from_diag
+                #         sub_path.append("diag")
+                #     else:
+                #         table[i_indx][j_indx] = from_left
+                #         sub_path.append("left")
+                # else:
+                #     if from_up >= from_left:
+                #         table[i_indx][j_indx] = from_up
+                #         sub_path.append("up")
+                #     else:
+                #         table[i_indx][j_indx] = from_left
+                #         sub_path.append("left")
         path.append(sub_path)
     return table, path
 
@@ -94,20 +106,22 @@ def calc_S_rand(seq_1, seq_2):
 
 if __name__ == '__main__':
 
-    res_table, res_path = run_blosum_and_answer()
-    print("values in path")
-    for line in res_table:
-        print(line)
-    print("path in table")
-    for line in res_path:
-        print(line)
+    # res_table, res_path = run_blosum_and_answer()
+    # print("values in path")
+    # print(np.array(res_table))
+    # # for line in res_table:
+    # #     print(line)
+    # print("path in table")
+    # # print(np.array(res_path))
+    # for line in res_path:
+    #     print(line)
 
     # S rand stuff 6+ task:
     print("S_rand")
-    seq_1 = "GKVNVDEV"
-    seq_2 = "GKVKVDEV"
-    seq_3 = "SKVKVDEV"
-    seq_4 = "GKVNVAEC"
+    seq_1 = "VDLEKIGG"
+    seq_2 = "VDINEVGP"
+    seq_3 = "VDLEKVGG"
+    seq_4 = "VNVEHDGH"
     print("1,2", calc_S_rand(seq_1, seq_2))
     print("1,3", calc_S_rand(seq_1, seq_3))
     print("1,4", calc_S_rand(seq_1, seq_4))
@@ -115,9 +129,9 @@ if __name__ == '__main__':
     print("2,4", calc_S_rand(seq_2, seq_4))
     print("3,4", calc_S_rand(seq_3, seq_4))
 
-    S = {1: {1: 16, 2: 13, 3: 10, 4: 10}, 2: {2: 16, 3: 13, 4: 10}, 3: {3: 16, 4: 4}, 4: {4: 16}}
+    S = {1: {1: 16, 2: 1, 3: 13, 4: 1}, 2: {2: 16, 3: 4, 4: -2}, 3: {3: 16, 4: 1}, 4: {4: 16}}
     S_rand = {1: {2: calc_S_rand(seq_1, seq_2), 3: calc_S_rand(seq_1, seq_3), 4: calc_S_rand(seq_1, seq_4)},
-              2: {3: calc_S_rand(seq_2, seq_3), 4: calc_S_rand(seq_2, seq_4)}, 3:{4: calc_S_rand(seq_3, seq_4)}}
+              2: {3: calc_S_rand(seq_2, seq_3), 4: calc_S_rand(seq_2, seq_4)}, 3: {4: calc_S_rand(seq_3, seq_4)}}
     for x, y in combinations([1, 2, 3, 4], 2):
         print(f"D {x, y}")
         up = (S[x][y] - S_rand[x][y])

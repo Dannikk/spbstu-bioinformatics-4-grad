@@ -1,37 +1,45 @@
 import math
+import os
 
-Q = {"A": 0.25, "C": 0.25, "T": 0.25, "G": 0.25}
-first_line = "GGATC"  # aka hor line
-cond_to_cond = {"M0": {"M1": 8 / 10, "I0": 1 / 10, "D1": 1 / 10},
-                "I0": {"M1": 1 / 3, "I0": 1 / 3, "D1": 1 / 3},
+Q = {"A": 0.2, "C": 0.3, "T": 0.2, "G": 0.3}
+first_line = "ACTG"  # aka hor line
+cond_to_cond = {"M0": {"M1": 0.61, "I0": 1 / 4, "D1": 0.14},
+                "I0": {"M1": 0.46, "I0": 0.27, "D1": 0.27},
                 # "D0":{"M1":1/3, "D1":1/3}
-                "M1": {"M2": 7 / 10, "I1": 1 / 10, "D2": 2 / 10},
+                "M1": {"M2": 0.71, "I1": 0.14, "D2": 0.14},
                 "I1": {"M2": 1 / 3, "I1": 1 / 3, "D2": 1 / 3},
                 "D1": {"M2": 1 / 3, "I2": 1 / 3, "D2": 1 / 3},
 
-                "M2": {"M3": 6 / 10, "I2": 3 / 10, "D3": 2 / 10},
-                "I2": {"M3": 3 / 5, "I2": 1 / 5, "D3": 1 / 5},
-                "D2": {"M3": 2 / 4, "I3": 1 / 4, "D3": 1 / 4},
+                "M2": {"M3": 0.55, "I2": 0.14, "D3": 0.30},
+                "I2": {"M3": 1 / 3, "I2": 1 / 3, "D3": 1 / 3},
+                "D2": {"M3": 1 / 3, "I3": 1 / 3, "D3": 1 / 3},
 
-                "M3": {"M4": 1 / 2, "I3": 1 / 2},
-                "I3": {"M4": 1 / 2, "I3": 1 / 2},
-                "D3": {"M4": 1},
+                "M3": {"M4": 0.65, "I3": 0.17, "D4": 0.17},
+                "I3": {"M4": 1 / 3, "I3": 1 / 3, "D4": 1 / 3},
+                "D3": {"M4": 0.51, "I4": 0.24, "D4": 0.24},
+
+                "M4": {"M5": 0.83, "I4": 0.17},
+                "I4": {"M5": 1 / 2, "I4": 1 / 2},
+                "D4": {"M5": 1 / 2, "I5": 1 / 2},
                 }
 
 let_to_cond = {"M0": {"A": 1 / 4, "C": 1 / 4, "T": 1 / 4, "G": 1 / 4},
-               "I0": {"A": 1 / 4, "C": 1 / 4, "T": 1 / 4, "G": 1 / 4},
+               "I0": {"A": 0.625, "C": 0.125, "T": 0.125, "G": 0.125},
 
-               "M1": {"A": 1 / 11, "C": 4 / 11, "T": 1 / 11, "G": 5 / 11},
-               "I1": {"A": 1 / 6, "C": 2 / 6, "T": 1 / 6, "G": 2 / 6},
+               "M1": {"A": 0.125, "C": 0.265, "T": 0.485, "G": 0.125},
+               "I1": {"A": 1 / 4, "C": 1 / 4, "T": 1 / 4, "G": 1 / 4},
 
-               "M2": {"A": 2 / 10, "C": 1 / 10, "T": 6 / 10, "G": 1 / 10},
-               "I2": {"A": 1 / 6, "C": 2 / 6, "T": 1 / 6, "G": 2 / 6},
+               "M2": {"A": 1 / 8, "C": 1 / 8, "T": 0.53, "G": 0.22},
+               "I2": {"A": 1 / 4, "C": 1 / 4, "T": 1 / 4, "G": 1 / 4},
 
-               "M3": {"A": 6 / 11, "C": 3 / 11, "T": 1 / 11, "G": 1 / 11},
+               "M3": {"A": 1 / 8, "C": 0.36, "T": 1 / 8, "G": 0.39},
                "I3": {"A": 1 / 4, "C": 1 / 4, "T": 1 / 4, "G": 1 / 4},
+
+                "M4": {"A": 0.455, "C": 0.125, "T": 0.295, "G": 0.125},
+                "I4": {"A": 1 / 4, "C": 1 / 4, "T": 1 / 4, "G": 1 / 4},
                }
 
-cond_size = 3  # 3+0
+cond_size = 4  # 3+0
 
 
 class log_Cell:
@@ -49,7 +57,9 @@ class log_Cell:
         # self.func = func
 
     def __repr__(self):
-        return f"Cell : (M:{self.m}-from:{self.m_dir}, I:{self.i}-from:{self.i_dir}, D:{self.d}-from:{self.d_dir})"
+        return f"! (M:{round(self.m, 3) if isinstance(self.m, float) else self.m}-from:{self.m_dir}," \
+               f" I:{round(self.i, 3) if isinstance(self.i, float) else self.i}-from:{self.i_dir}," \
+               f" D:{round(self.d, 3) if isinstance(self.d, float) else self.d}-from:{self.d_dir})!"
 
     def sum_calc_i(self, prev_cell, cond, letter):
         pref = math.log(let_to_cond["I" + str(cond)][letter] / Q[letter])
@@ -201,6 +211,63 @@ def run_forward(table):
     return table
 
 
+def tex_cell(*args):
+    begin = r"\begin{tabular}[c]{@{}l@{}}"
+    end = r"\end{tabular}"
+    cell = str(args[0])
+    for i in args[1::]:
+        cell += r"\\ " + str(i)
+
+    return begin+cell+end
+
+
+def tex_table(table, output: str = "tex_table.tex"):
+    preambule = r"\documentclass{article}" + '\n' +\
+                r"\usepackage[a4paper,margin=1mm,landscape]{geometry}" + "\n" + \
+                r"\begin{document}" + "\n"
+    doc_end = r"\end{document}"
+
+    hor = r"\hline"
+    rd = 2
+
+    out = open(output, "w")
+
+    begin = r"\begin{table}[]"+"\n"+r"\begin{tabular}{"+("|l"*(len(first_line)+1)) + "|}" + "\n" + r"\hline"
+    end = r"\end{tabular}" + "\n" + r"\end{table}"
+    # header = "& " + reduce(lambda x, y: x + " & " + y, first_line) + r"\\ \hline"
+    header = ""
+    for i, letter in enumerate(first_line, start=1):
+        cell = table[0][i]
+        # TODO: move the construction of a cell string into a wrapper function
+        header += "& " + letter + ": " + tex_cell(  f"M={round(cell.m, rd) if isinstance(cell.m, float) else cell.m} ({cell.m_dir})",
+                                                    f"I={round(cell.i, rd) if isinstance(cell.i, float) else cell.i} ({cell.i_dir})",
+                                                    f"D={round(cell.d, rd) if isinstance(cell.d, float) else cell.d} ({cell.d_dir})")
+
+    header += r"\\ \hline"
+    cur_tab = begin + "\n" + header
+
+    for j, letter in enumerate(['1', '2', '3', '4'], start=1):
+        cell = table[j][0]
+        new_str = letter + ": " + tex_cell( f"M={round(cell.m, rd) if isinstance(cell.m, float) else cell.m} ({cell.m_dir})",
+                                            f"I={round(cell.i, rd) if isinstance(cell.i, float) else cell.i} ({cell.i_dir})",
+                                            f"D={round(cell.d, rd) if isinstance(cell.d, float) else cell.d} ({cell.d_dir})")
+        for i in range(1, len(first_line) + 1):
+            cell = table[j][i]
+            c = tex_cell(f"M={round(cell.m, rd) if isinstance(cell.m, float) else cell.m} ({cell.m_dir})",
+                         f"I={round(cell.i, rd) if isinstance(cell.i, float) else cell.i} ({cell.i_dir})",
+                         f"D={round(cell.d, rd) if isinstance(cell.d, float) else cell.d} ({cell.d_dir})")
+            new_str += " & " + c
+
+        new_str += r"\\ \hline"
+        cur_tab += "\n" + new_str
+
+    cur_tab += "\n" + end
+
+    doc = preambule + cur_tab + "\n" + doc_end
+    out.write(doc)
+    out.close()
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     size_x = len(first_line)
@@ -209,9 +276,17 @@ if __name__ == '__main__':
     print("INIT TABLE")
     show_table(table)
     res = run_viterbi(table, size_x, size_y)
+
+    tex_table(res)
+    os.system("pdflatex -job-name Viterbi_log tex_table.tex")
+
     print("VITERBI TABLE RESULT")
     show_table(res)
     print("FORWARD TABLE RESULT")
     table = init_table_sum(size_x, size_y)
     result = run_forward(table)
+
+    tex_table(result)
+    os.system("pdflatex -job-name Forward_log tex_table.tex")
+
     show_table(result)

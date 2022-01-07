@@ -1,9 +1,13 @@
+from functools import reduce
+import os
+
+
 Q = 0.25
 P = {"T": {"T": 0.5, "C": 0.05, "A": 0.3, "G": 0.15}, "A": {"A": 0.5, "G": 0.05, "T": 0.3, "C": 0.15},
      "G": {"G": 0.5, "A": 0.05, "T": 0.15, "C": 0.3}, "C": {"C": 0.5, "T": 0.05, "G": 0.3, "A": 0.15}}
 PI = {"M": {"X": 0.2, "Y": 0.2, "M": 0.5}, "X": {"X": 0.1, "M": 0.8}, "Y": {"Y": 0.1, "M": 0.8}}
-first_line = "GGATC"  # aka hor line
-second_line = "GAC"  # aka vertical line
+first_line = "AATGAC"  # aka hor line
+second_line = "ATC"  # aka vertical line
 
 
 class Cell:
@@ -21,7 +25,7 @@ class Cell:
         self.func = func
 
     def __repr__(self):
-        return f"Cell : (M:{self.m}-from:{self.m_dir}, X:{self.x}-from:{self.x_dir}, Y:{self.y}-from:{self.y_dir})"
+        return f"!(M:{self.m:.1e}-from:{self.m_dir}, X:{self.x:.1e}-from:{self.x_dir}, Y:{self.y:.1e}-from:{self.y_dir})!"
 
     def sum_calc_x(self, cell):
         self.x = Q * sum([cell.m * PI["M"]["X"], cell.x * PI["X"]["X"]])
@@ -114,6 +118,62 @@ def run_forward(table):
     return table
 
 
+def tex_cell(*args):
+    begin = r"\begin{tabular}[c]{@{}l@{}}"
+    end = r"\end{tabular}"
+    cell = str(args[0])
+    for i in args[1::]:
+        cell += r"\\ " + str(i)
+
+    return begin+cell+end
+
+
+def tex_table(table, output: str = "tex_table.tex"):
+    preambule = r"\documentclass{article}" + '\n' +\
+                r"\usepackage[a4paper,margin=1mm,landscape]{geometry}" + "\n" + \
+                r"\begin{document}" + "\n"
+    doc_end = r"\end{document}"
+
+    hor = r"\hline"
+    rd = 2
+
+    out = open(output, "w")
+
+    begin = r"\begin{table}[]"+"\n"+r"\begin{tabular}{"+("|l"*(len(first_line)+1)) + "|}" + "\n" + r"\hline"
+    end = r"\end{tabular}" + "\n" + r"\end{table}"
+    # header = "& " + reduce(lambda x, y: x + " & " + y, first_line) + r"\\ \hline"
+    header = ""
+    for i, letter in enumerate(first_line, start=1):
+        cell = table[0][i]
+        header += "& " + letter + ": " + tex_cell(  f"M={cell.m:.{rd}e} ({cell.m_dir})",
+                                                    f"X={cell.x:.{rd}e} ({cell.x_dir})",
+                                                    f"Y={cell.y:.{rd}e} ({cell.y_dir})")
+
+    header += r"\\ \hline"
+    cur_tab = begin + "\n" + header
+
+    for j, letter in enumerate(second_line, start=1):
+        cell = table[j][0]
+        new_str = letter + ": " + tex_cell( f"M={cell.m:.{rd}e} ({cell.m_dir})",
+                                            f"X={cell.x:.{rd}e} ({cell.x_dir})",
+                                            f"Y={cell.y:.{rd}e} ({cell.y_dir})")
+        for i in range(1, len(first_line) + 1):
+            cell = table[j][i]
+            c = tex_cell(f"M={cell.m:.{rd}e} ({cell.m_dir})",
+                         f"X={cell.x:.{rd}e} ({cell.x_dir})",
+                         f"Y={cell.y:.{rd}e} ({cell.y_dir})")
+            new_str += " & " + c
+
+        new_str += r"\\ \hline"
+        cur_tab += "\n" + new_str
+
+    cur_tab += "\n" + end
+
+    doc = preambule + cur_tab + "\n" + doc_end
+    out.write(doc)
+    out.close()
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     pass
@@ -123,10 +183,18 @@ if __name__ == '__main__':
     print("INIT TABLE")
     show_table(table)
     res = run_viterbi(table)
+
+    tex_table(res)
+    os.system("pdflatex -job-name Viterbi tex_table.tex")
+
     print("VITERBI TABLE RESULT")
     show_table(res)
     print("FORWARD TABLE RESULT")
     table = init_table_sum(size_x, size_y)
     result = run_forward(table)
+
+    tex_table(result)
+    os.system("pdflatex -job-name Forward tex_table.tex")
+
     show_table(result)
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
